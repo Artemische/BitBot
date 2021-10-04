@@ -11,17 +11,21 @@ const BUTTONS = {
       label: '💵 Show course',
       command: '/showcourse'
   },
+  reiltoBtn: {
+    label: '🏦 Rialto cousrse',
+    command: '/rialtocourse'
+  },
   world: {
       label: '🤑 How much in BTC',
       command: '/howmuch'
   },
   buy: {
     label: '💰 Buy BTC',
-    command: '/buyBTC'
+    command: '/buybtc'
 },
 };
 
-const TOKEN = "799020342:AAFsrpLz0kLGWoOoU4e_WUGIk0zL9dhk-5Q";
+const TOKEN = fs.readFileSync("token.txt").toString();
 const bot = new TeleBot({
   token: TOKEN,
   usePlugins: ['askUser', 'commandButton', 'floodProtection', 'namedButtons'],
@@ -41,9 +45,10 @@ bot.on(['/start', '/hello'], msg => {
     [
         // First row with command callback button
       BUTTONS.hello.label,
-      BUTTONS.world.label
+      BUTTONS.reiltoBtn.label,
     ],
     [
+      BUTTONS.world.label,
       BUTTONS.buy.label
     ]
   ], {resize: true});
@@ -52,29 +57,17 @@ bot.on(['/start', '/hello'], msg => {
 });
 
 bot.on(['/showcourse'], msg => {
-  parseUrl('https://www.bestchange.ru/visa-mastercard-usd-to-bitcoin.html');
   axios.get(`https://blockchain.info/ticker`).then( res => bot.sendMessage(msg.from.id, `1 BTC = ${res.data.USD.last} $`));
-  fs.readFile('resp.json', 'utf8', function(err, data){
-    let resultString = '';
-    
-    console.log(JSON.parse(data).length)
+});
 
-    JSON.parse(data).forEach(el => {
-      resultString += `
-        Обменник: ${el.chName},
-        Отдаете: ${el.send},
-        Получаете: ${el.receive},
-        Резерв: ${el.liveAmmount}
-      `
-
-      bot.sendMessage(msg.from.id, resultString)
-    });
-  });
+bot.on(['/rialtocourse'], msg => {
+  bot.sendMessage(msg.from.id, "Give me a second...");
+  parseUrl('https://www.bestchange.ru/visa-mastercard-usd-to-bitcoin.html', msg);
 });
 
 bot.on(['/howmuch'], msg => bot.sendMessage(msg.from.id, "How many $ do you have?", {ask: 'number'}));
 
-bot.on(['/buyBTC'], msg => {
+bot.on(['/buybtc'], msg => {
   bot.sendMessage(msg.from.id, "Looking for online sellers...");
   setTimeout(() => {
     bot.sendMessage(msg.from.id, "Please contact @artemis4e");
@@ -91,11 +84,15 @@ bot.on('ask.number', msg => /^\d+$/.test(msg.text) ?
 bot.start();
 
 
-const parseUrl = (URL) => {
+const parseUrl = (URL, msg) => {
   const result = [];
   const q = tress(function (url, callback) {
     needle.get(url, function (err, res) {
-      if (err) throw err;
+      if (err || !res.body) {
+        bot.sendMessage(msg.from.id, 'Something wrong ... Could you try one more time?');
+        
+        return
+      }
 
       // парсим DOM
       const $ = cheerio.load(res.body);
@@ -121,8 +118,44 @@ const parseUrl = (URL) => {
 
   q.drain = function () {
     fs.writeFileSync("./resp.json", JSON.stringify(result));
+
+    bot.sendMessage(msg.from.id, coursesMsg(result));
+
     return result
   };
 
   q.push(URL);
 };
+
+
+const coursesMsg = (dataArray) => {
+  let resultString = 'Current course: \n';
+
+  dataArray.forEach(el => {
+    resultString += `
+      Обменник: ${el.chName},
+      Отдаете: ${el.send},
+      Получаете: ${el.receive},
+      Резерв: ${el.liveAmmount}
+    `
+  });
+
+  return resultString
+}
+
+const readFile = async (filePath, recipient) => {
+
+  return new Promise((resolve, reject) => {
+    fs.readFile(filePath, "utf-8", (err, data) => {
+      if (err) {
+        bot.sendMessage(recipient, "file-read-error");
+        
+        reject(err);
+      }
+
+      if (data) {
+        resolve(data)
+      }
+    })
+  })
+}
