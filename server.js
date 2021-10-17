@@ -1,12 +1,9 @@
 const TeleBot = require('telebot');
 const axios = require('axios');
-const tress = require("tress");
-const needle = require("needle");
-const cheerio = require("cheerio");
-const resolve = require("url").resolve;
 const fs = require("fs");
-const fileUtils = require("./utils/file");
 const TOKEN = fs.readFileSync("token.txt").toString();
+const fileUtils = require("./utils/file");
+const webUtils = require("./utils/web");
 
 const BUTTONS = {
   hello: {
@@ -63,7 +60,7 @@ bot.on(['/showcourse'], msg => {
 
 bot.on(['/rialtocourse'], msg => {
   bot.sendMessage(msg.from.id, "Give me a second...");
-  parseUrl('https://www.bestchange.ru/visa-mastercard-usd-to-bitcoin.html', msg);
+  webUtils.parseUrl('https://www.bestchange.ru/visa-mastercard-usd-to-bitcoin.html',bot ,msg.from.id);
 });
 
 bot.on(['/howmuch'], msg => bot.sendMessage(msg.from.id, "How many $ do you have?", {ask: 'number'}));
@@ -83,63 +80,3 @@ bot.on('ask.number', msg => /^\d+$/.test(msg.text) ?
 );
 
 bot.start();
-
-
-const parseUrl = (URL, msg) => {
-  const result = [];
-  const q = tress(function (url, callback) {
-    needle.get(url, function (err, res) {
-      if (err || !res.body) {
-        bot.sendMessage(msg.from.id, 'Something wrong ... Could you try one more time?');
-        
-        return
-      }
-
-      // парсим DOM
-      const $ = cheerio.load(res.body);
-      
-      if ($('#content_table')){
-        const tableBody = $('#content_table > tbody').contents();
-        const rows = [...tableBody].filter( el => el.name === 'tr');
-        const parseResult = rows.map( el => {
-          return {
-            chName: el.children[3].children[0].children[1].children[0].children[0].data, 
-            send: `${el.children[4].children[0].children[0].data} ${el.children[4].children[0].children[1].children[0].data}`, 
-            receive: `${el.children[6].children[0].data} ${el.children[6].children[1].children[0].data}`,
-            liveAmmount: el.children[8].children[0].data 
-          }
-        });
-
-        result.push(...parseResult);
-      }
-
-      callback();
-    });
-  });
-
-  q.drain = function () {
-    fs.writeFileSync("./resp.json", JSON.stringify(result));
-
-    bot.sendMessage(msg.from.id, coursesMsg(result));
-
-    return result
-  };
-
-  q.push(URL);
-};
-
-
-const coursesMsg = (dataArray) => {
-  let resultString = 'Current course: \n';
-
-  dataArray.forEach(el => {
-    resultString += `
-      Обменник: ${el.chName},
-      Отдаете: ${el.send},
-      Получаете: ${el.receive},
-      Резерв: ${el.liveAmmount}
-    `
-  });
-
-  return resultString
-}
