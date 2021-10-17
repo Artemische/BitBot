@@ -5,6 +5,8 @@ const needle = require("needle");
 const cheerio = require("cheerio");
 const resolve = require("url").resolve;
 const fs = require("fs");
+const fileUtils = require("./utils/file");
+const TOKEN = fs.readFileSync("token.txt").toString();
 
 const BUTTONS = {
   hello: {
@@ -25,7 +27,6 @@ const BUTTONS = {
 },
 };
 
-const TOKEN = fs.readFileSync("token.txt").toString();
 const bot = new TeleBot({
   token: TOKEN,
   usePlugins: ['askUser', 'commandButton', 'floodProtection', 'namedButtons'],
@@ -141,21 +142,4 @@ const coursesMsg = (dataArray) => {
   });
 
   return resultString
-}
-
-const readFile = async (filePath, recipient) => {
-
-  return new Promise((resolve, reject) => {
-    fs.readFile(filePath, "utf-8", (err, data) => {
-      if (err) {
-        bot.sendMessage(recipient, "file-read-error");
-        
-        reject(err);
-      }
-
-      if (data) {
-        resolve(data)
-      }
-    })
-  })
 }
