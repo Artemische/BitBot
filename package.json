@@ -18,6 +18,9 @@
     "axios": "^0.21.1",
     "request": "^2.88.2"
   },
+  "nodemonConfig": {
+    "ignore": ["*.json"]
+  },
   "scripts": {
     "dev": "nodemon ./server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
