@@ -2,8 +2,9 @@ const TeleBot = require('telebot');
 const axios = require('axios');
 const fs = require("fs");
 const TOKEN = fs.readFileSync("token.txt").toString();
-const fileUtils = require("./utils/file");
 const webUtils = require("./utils/web");
+const fileUtils = require("./utils/file");
+const { data } = require('cheerio/lib/api/attributes');
 
 const BUTTONS = {
   hello: {
@@ -50,7 +51,8 @@ bot.on(['/start', '/hello'], msg => {
       BUTTONS.buy.label
     ]
   ], {resize: true});
-  
+
+  fileUtils.checkUser(msg.from, "./users.json");
   return bot.sendMessage(msg.from.id, 'Welcome!', {replyMarkup})
 });
 
@@ -72,7 +74,7 @@ bot.on(['/buybtc'], msg => {
   }, 2000)
 })
 
-bot.on('callbackQuery', (msg) => bot.answerCallbackQuery(msg.id));
+//bot.on('callbackQuery', (msg) => bot.answerCallbackQuery(msg.id));
 
 bot.on('ask.number', msg => /^\d+$/.test(msg.text) ?
   axios.get(`https://blockchain.info/tobtc?currency=USD&value=${msg.text}`).then( res => bot.sendMessage(msg.from.id, `${res.data} BTC`)) : 

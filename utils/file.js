@@ -14,6 +14,20 @@ const fileUtils = {
                 }
             })
         })
+    },
+
+    checkUser: async (user, filePath) => {
+        fileUtils.readFileAsync(filePath).then( data => {
+            data = JSON.parse(data);
+
+            if (data && !(user.id in data)) {
+                data[user.id] = user;
+
+                fs.writeFile( filePath, JSON.stringify(data), (err) => {                
+                    if (err) console.log(`write file error, ${err}`)
+                });
+            }
+        }).catch( err => console.log(user, err + ' Err') )
     }
 }
 
