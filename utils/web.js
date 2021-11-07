@@ -2,6 +2,7 @@ const fs = require("fs");
 const tress = require("tress");
 const needle = require("needle");
 const cheerio = require("cheerio");
+const fileUtils = require("./file");
 
 const webUtils = {
     parseUrl:  function(URL, bot, id) {
@@ -10,8 +11,10 @@ const webUtils = {
         const q = tress(function (url, callback) {
             needle.get(url, function (err, res) {
                 if (err || !res.body) {
-                    bot.sendMessage(id, 'Something wrong ... Could you try one more time?');
-
+                    fileUtils.readFileAsync("./resp.json")
+                        .then( res => bot.sendMessage(id, `${coursesMsg(JSON.parse(res), false)}`))
+                        .catch( err => bot.sendMessage(id, `Error ${err}`) );
+                    //bot.sendMessage(id, 'Something wrong ... Could you try one more time?');
                     return
                 }
 
@@ -38,9 +41,11 @@ const webUtils = {
         });
 
         q.drain = function () {
-            fs.writeFileSync("../resp.json", JSON.stringify(result));
-
             bot.sendMessage(id, coursesMsg(result));
+
+            fs.writeFile( "./resp.json", JSON.stringify(result), (err) => {                
+                if (err) console.log(`write file error, ${err}`)
+            });
 
             return result
         };
@@ -48,9 +53,9 @@ const webUtils = {
         q.push(URL);
     },
 
-    coursesMsg: function(dataArray) {
-        let resultString = 'Current course: \n';
-      
+    coursesMsg: function(dataArray, success = true) {
+        let resultString = `${success ? "Current" : "Previous "} course: \n`;
+        
         dataArray.forEach(el => {
           resultString += `
             Обменник: ${el.chName},
@@ -61,7 +66,7 @@ const webUtils = {
         });
       
         return resultString
-      }
+    }
 }
 
 module.exports = webUtils
