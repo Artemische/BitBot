@@ -1,7 +1,7 @@
 const TeleBot = require('telebot');
 const axios = require('axios');
 const fs = require("fs");
-const TOKEN = fs.readFileSync("token.txt").toString();
+//const TOKEN = fs.readFileSync("token.txt").toString();
 const webUtils = require("./utils/web");
 const fileUtils = require("./utils/file");
 const { data } = require('cheerio/lib/api/attributes');
@@ -26,7 +26,7 @@ const BUTTONS = {
 };
 
 const bot = new TeleBot({
-  token: TOKEN,
+  token: process.env.TELEB_KEY,
   usePlugins: ['askUser', 'commandButton', 'floodProtection', 'namedButtons'],
   pluginConfig: {
     floodProtection: {
@@ -53,6 +53,7 @@ bot.on(['/start', '/hello'], msg => {
   ], {resize: true});
 
   fileUtils.checkUser(msg.from, "./users.json");
+  console.log("checked");
   return bot.sendMessage(msg.from.id, 'Welcome!', {replyMarkup})
 });
 
