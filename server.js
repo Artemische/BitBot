@@ -1,10 +1,15 @@
 const TeleBot = require('telebot');
+const { Client } = require('pg');
 const axios = require('axios');
 const fs = require("fs");
-//const TOKEN = fs.readFileSync("token.txt").toString();
 const webUtils = require("./utils/web");
 const fileUtils = require("./utils/file");
-const { data } = require('cheerio/lib/api/attributes');
+const client = new Client({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false,
+  }
+});
 
 const BUTTONS = {
   hello: {
@@ -52,8 +57,17 @@ bot.on(['/start', '/hello'], msg => {
     ]
   ], {resize: true});
 
+  client.query(`SELECT * FROM test_table WHERE id = ${msg.from.id};`, (err, res) => {
+    if (err) console.log('user check error: ' + err);
+    if (res.rowCount === 0) client.query(
+      `INSERT INTO test_table(id, first_name, last_name, username, lang) VALUES($1, $2, $3, $4, $5) RETURNING *`,
+      [msg.from.id, msg.from.first_name, msg.from.last_name, msg.from.username, msg.from.language_code],
+      (err, res) => {
+      console.log(err ? "USER ADD ERROR" : `User ${res.rows[0].username} was added`);
+    })
+    else console.log("user exist");
+  })
   fileUtils.checkUser(msg.from, "./users.json");
-  console.log("checked");
   return bot.sendMessage(msg.from.id, 'Welcome!', {replyMarkup})
 });
 
@@ -82,4 +96,5 @@ bot.on('ask.number', msg => /^\d+$/.test(msg.text) ?
   bot.sendMessage(msg.from.id, `WTF?`)
 );
 
+client.connect();
 bot.start();
