@@ -26,7 +26,7 @@ const BUTTONS = {
 };
 
 const bot = new TeleBot({
-  token: process.env.TELEB_KEY,
+  token: process.env.TELEB_KEY || fs.readFileSync("token.txt").toString(),
   usePlugins: ['askUser', 'commandButton', 'floodProtection', 'namedButtons'],
   pluginConfig: {
     floodProtection: {
