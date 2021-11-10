@@ -63,7 +63,7 @@ bot.on(['/start', '/hello'], msg => {
       `INSERT INTO test_table(id, first_name, last_name, username, lang) VALUES($1, $2, $3, $4, $5) RETURNING *`,
       [msg.from.id, msg.from.first_name, msg.from.last_name, msg.from.username, msg.from.language_code],
       (err, res) => {
-      console.log(err ? "USER ADD ERROR" : `User ${res.rows[0].username} was added`);
+      console.log(err ? "USER ADD ERROR" : `User ${res.rows[0].username || res.rows[0].first_name } was added (${res.rows[0].id}) `);
     })
     else console.log("user exist");
   })
