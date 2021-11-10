@@ -19,7 +19,6 @@ const fileUtils = {
     checkUser: async (user, filePath) => {
         console.log("check start")
         fileUtils.readFileAsync(filePath).then( data => {
-            console.log("file read success")
             data = JSON.parse(data);
 
             if (data && !(user.id in data)) {
@@ -27,7 +26,6 @@ const fileUtils = {
                 fs.writeFile( filePath, JSON.stringify(data), (err) => {                
                     if (err) console.log(`write file error, ${err}`)
                 });
-                console.log("user was added");
             }
         }).catch( err => console.log(user, err + ' Err') )
     }
