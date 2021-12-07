@@ -3,40 +3,23 @@ const { Client } = require('pg');
 const axios = require('axios');
 const fs = require("fs");
 const webUtils = require("./utils/web");
-const fileUtils = require("./utils/file");
+const CONST = require("./utils/constants.json");
+const { type } = require('os');
 const client = new Client({
   connectionString: process.env.DATABASE_URL,
   ssl: {
     rejectUnauthorized: false,
   }
 });
-
-const BUTTONS = {
-  hello: {
-      label: '💵 Show course',
-      command: '/showcourse'
-  },
-  reiltoBtn: {
-    label: '🏦 Rialto cousrse',
-    command: '/rialtocourse'
-  },
-  world: {
-      label: '🤑 How much in BTC',
-      command: '/howmuch'
-  },
-  buy: {
-    label: '💰 Buy BTC',
-    command: '/buybtc'
-},
-};
-
+const BUTTONS = CONST.BUTTONS;
+const timers = new Map();
 const bot = new TeleBot({
-  token: process.env.TELEB_KEY || fs.readFileSync("token.txt").toString(),
+  token: process.env.TELEB_KEY,
   usePlugins: ['askUser', 'commandButton', 'floodProtection', 'namedButtons'],
   pluginConfig: {
     floodProtection: {
-        interval: 1,
-        message: 'Too many messages, relax!'
+      interval: 1,
+      message: 'Too many messages, relax!'
     },
     namedButtons: {
       buttons: BUTTONS
@@ -44,16 +27,23 @@ const bot = new TeleBot({
   }
 });
 
-bot.on(['/start', '/hello'], msg => {
+const state = {
+  selectedCurrency: null,
+  monitorAction: false,
+}
+
+bot.on(['/start', '/hello', '/return'], msg => {
   const replyMarkup = bot.keyboard([
     [
-        // First row with command callback button
-      BUTTONS.hello.label,
+      BUTTONS.showcourse.label,
       BUTTONS.reiltoBtn.label,
     ],
     [
-      BUTTONS.world.label,
+      BUTTONS.count.label,
       BUTTONS.buy.label
+    ],
+    [
+      BUTTONS.notificate.label
     ]
   ], {resize: true});
 
@@ -67,12 +57,39 @@ bot.on(['/start', '/hello'], msg => {
     })
     else console.log("user exist");
   })
-  fileUtils.checkUser(msg.from, "./users.json");
-  return bot.sendMessage(msg.from.id, 'Welcome!', {replyMarkup})
+  
+  return bot.sendMessage(msg.from.id, msg.text !== '⬅️' ? 'Welcome!' : 'Main menu', {replyMarkup})
 });
 
 bot.on(['/showcourse'], msg => {
-  axios.get(`https://blockchain.info/ticker`).then( res => bot.sendMessage(msg.from.id, `1 BTC = ${res.data.USD.last} $`));
+  const replyMarkup = bot.keyboard([
+    [
+      BUTTONS.BTC.label,
+      BUTTONS.ETH.label,
+      BUTTONS.BNB.label,
+    ],
+    [
+      BUTTONS.SOL.label,
+      BUTTONS.ADA.label,
+      BUTTONS.XRP.label,
+    ],
+    [
+      BUTTONS.return.label
+    ]
+  ], {resize: true});
+
+  bot.sendMessage(msg.from.id, "Choose currency", {replyMarkup})
+});
+
+bot.on(['/getCourse'], msg => {
+  if (state.monitorAction){
+    state.monitorAction = false;
+    return
+  }
+
+  axios.get(`${process.env.API_URL}/coins/${CONST.COISNS[msg.text].id}`).then( res => {
+    bot.sendMessage(msg.from.id, res.data.market_data.current_price.usd);
+  });
 });
 
 bot.on(['/rialtocourse'], msg => {
@@ -95,6 +112,76 @@ bot.on('ask.number', msg => /^\d+$/.test(msg.text) ?
   axios.get(`https://blockchain.info/tobtc?currency=USD&value=${msg.text}`).then( res => bot.sendMessage(msg.from.id, `${res.data} BTC`)) : 
   bot.sendMessage(msg.from.id, `WTF?`)
 );
+
+bot.on(['/notificate'], msg => {
+  const replyMarkup = bot.keyboard([
+    [
+      BUTTONS.BTC.label,
+      BUTTONS.ETH.label,
+      BUTTONS.BNB.label,
+    ],
+    [
+      BUTTONS.SOL.label,
+      BUTTONS.ADA.label,
+      BUTTONS.XRP.label,
+    ],
+    [
+      BUTTONS.return.label
+    ]
+  ], {resize: true});
+
+  bot.sendMessage(msg.from.id, 'Choose currency', {replyMarkup, ask: 'targetCoin'});
+});
+
+bot.on('ask.targetCoin', msg => {
+  const userId = msg.from.id;
+
+  state.selectedCurrency = CONST.COISNS[msg.text].id;
+  state.monitorAction = true;
+  bot.sendMessage(userId, 'Target price?', {ask: 'targetPrice', replyMarkup: 'hide'})
+})
+
+bot.on('ask.targetPrice', msg => {
+  const resCourse = msg.text; // add reg exp 
+  const replyMarkup = bot.keyboard([
+    [
+      BUTTONS.showcourse.label,
+      BUTTONS.reiltoBtn.label,
+    ],
+    [
+      BUTTONS.count.label,
+      BUTTONS.buy.label
+    ],
+    [
+      BUTTONS.notificate.label
+    ]
+  ], {resize: true});
+  let interval;
+  
+  axios.get(`${process.env.API_URL}/coins/${state.selectedCurrency}`).then( res => {
+    const price = res.data.market_data.current_price.usd;
+
+    if (price < resCourse) {
+      bot.sendMessage(msg.from.id, '🔔🔔🔔', {replyMarkup});
+    } else {
+      bot.sendMessage(msg.from.id, 'monitoring...', {replyMarkup});
+      interval = setInterval( () => {
+        const price = res.data.market_data.current_price.usd;
+
+        axios.get(`${process.env.API_URL}/coins/${state.selectedCurrency}`).then( res => { 
+          if (price < resCourse) {
+            bot.sendMessage(msg.from.id, "🔔🔔🔔", {replyMarkup});
+            clearInterval(interval);
+          } else {
+            console.log("next", price, resCourse)
+          }
+        })
+      }, 5000 )
+    } //проверка промежутка? больше/меньше
+  });
+
+
+})
 
 client.connect();
 bot.start();
