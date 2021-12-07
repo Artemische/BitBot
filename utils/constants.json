@@ -49,7 +49,7 @@
           "command": "/getCourse"
         }
     },
-    "COISNS": {
+    "COINS": {
         "BTC": {
             "id": "bitcoin"
         },

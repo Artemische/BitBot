@@ -87,7 +87,7 @@ bot.on(['/getCourse'], msg => {
     return
   }
 
-  axios.get(`${process.env.API_URL}/coins/${CONST.COISNS[msg.text].id}`).then( res => {
+  axios.get(`${process.env.API_URL}/coins/${CONST. COINS[msg.text].id}`).then( res => {
     bot.sendMessage(msg.from.id, res.data.market_data.current_price.usd);
   });
 });
@@ -136,7 +136,7 @@ bot.on(['/notificate'], msg => {
 bot.on('ask.targetCoin', msg => {
   const userId = msg.from.id;
 
-  state.selectedCurrency = CONST.COISNS[msg.text].id;
+  state.selectedCurrency = CONST. COINS[msg.text].id;
   state.monitorAction = true;
   bot.sendMessage(userId, 'Target price?', {ask: 'targetPrice', replyMarkup: 'hide'})
 })
@@ -160,19 +160,23 @@ bot.on('ask.targetPrice', msg => {
   
   axios.get(`${process.env.API_URL}/coins/${state.selectedCurrency}`).then( res => {
     const price = res.data.market_data.current_price.usd;
+    const lower = price < resCourse;
+    console.log(lower, "164")
 
-    if (price < resCourse) {
+    if (lower ? price >= resCourse : price <= resCourse ) {
       bot.sendMessage(msg.from.id, '🔔🔔🔔', {replyMarkup});
     } else {
       bot.sendMessage(msg.from.id, 'monitoring...', {replyMarkup});
       interval = setInterval( () => {
-        const price = res.data.market_data.current_price.usd;
-
         axios.get(`${process.env.API_URL}/coins/${state.selectedCurrency}`).then( res => { 
-          if (price < resCourse) {
+          const price = res.data.market_data.current_price.usd;
+
+          if (lower ? price >= resCourse : price <= resCourse) {
+            console.log(lower, "175")
             bot.sendMessage(msg.from.id, "🔔🔔🔔", {replyMarkup});
             clearInterval(interval);
           } else {
+            console.log(lower, "179")
             console.log("next", price, resCourse)
           }
         })
