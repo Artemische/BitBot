@@ -1,0 +1,72 @@
+{
+    "BUTTONS": {
+        "showcourse": {
+            "label": "💵 Show course",
+            "command": "/showcourse"
+        },
+        "reiltoBtn": {
+          "label": "🏦 Rialto cousrse",
+          "command": "/rialtocourse"
+        },
+        "count": {
+            "label": "🤑 How much in BTC",
+            "command": "/howmuch"
+        },
+        "buy": {
+          "label": "💰 Buy BTC",
+          "command": "/buybtc"
+        },
+        "notificate": {
+          "label": "🔔 Notificate me",
+          "command": "/notificate"
+        },
+        "return": {
+          "label": "⬅️",
+          "command": "/return"
+        },
+        "BTC": {
+          "label": "BTC",
+          "command": "/getCourse"
+        },
+        "ETH": {
+          "label": "ETH",
+          "command": "/getCourse"
+        },
+        "BNB": {
+            "label": "BNB",
+            "command": "/getCourse"
+        },
+        "SOL": {
+            "label": "SOL",
+            "command": "/getCourse"
+        },
+        "ADA": {
+            "label": "ADA",
+            "command": "/getCourse"
+        },
+        "XRP": {
+          "label": "XRP", 
+          "command": "/getCourse"
+        }
+    },
+    "COISNS": {
+        "BTC": {
+            "id": "bitcoin"
+        },
+        "ETH": {
+            "id": "ethereum"
+        },
+        "BNB": {
+            "id": "binancecoin"
+        },
+        "SOL": {
+            "id": "solana"
+        },
+        "ADA": {
+            "id": "cardano"
+        }, 
+        "XRP": {
+            "id": "ripple"
+        }
+    }
+}
