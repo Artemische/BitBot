@@ -100,6 +100,7 @@ bot.on(['/rialtocourse'], msg => {
 bot.on(['/howmuch'], msg => bot.sendMessage(msg.from.id, "How many $ do you have?", {ask: 'number'}));
 
 bot.on(['/buybtc'], msg => {
+  console.log(timers)
   bot.sendMessage(msg.from.id, "Looking for online sellers...");
   setTimeout(() => {
     bot.sendMessage(msg.from.id, "Please contact @artemis4e");
@@ -136,13 +137,15 @@ bot.on(['/notificate'], msg => {
 bot.on('ask.targetCoin', msg => {
   const userId = msg.from.id;
 
-  state.selectedCurrency = CONST. COINS[msg.text].id;
+  state.selectedCurrency = CONST.COINS[msg.text].id;
   state.monitorAction = true;
   bot.sendMessage(userId, 'Target price?', {ask: 'targetPrice', replyMarkup: 'hide'})
 })
 
 bot.on('ask.targetPrice', msg => {
   const resCourse = msg.text; // add reg exp 
+  const selectedCurrency = state.selectedCurrency;
+  const userId = msg.from.id;
   const replyMarkup = bot.keyboard([
     [
       BUTTONS.showcourse.label,
@@ -158,7 +161,7 @@ bot.on('ask.targetPrice', msg => {
   ], {resize: true});
   let interval;
   
-  axios.get(`${process.env.API_URL}/coins/${state.selectedCurrency}`).then( res => {
+  axios.get(`${process.env.API_URL}/coins/${selectedCurrency}`).then( res => {
     const price = res.data.market_data.current_price.usd;
     const lower = price < resCourse;
     console.log(lower, "164")
@@ -167,20 +170,59 @@ bot.on('ask.targetPrice', msg => {
       bot.sendMessage(msg.from.id, '🔔🔔🔔', {replyMarkup});
     } else {
       bot.sendMessage(msg.from.id, 'monitoring...', {replyMarkup});
-      interval = setInterval( () => {
-        axios.get(`${process.env.API_URL}/coins/${state.selectedCurrency}`).then( res => { 
-          const price = res.data.market_data.current_price.usd;
 
-          if (lower ? price >= resCourse : price <= resCourse) {
-            console.log(lower, "175")
-            bot.sendMessage(msg.from.id, "🔔🔔🔔", {replyMarkup});
-            clearInterval(interval);
-          } else {
-            console.log(lower, "179")
-            console.log("next", price, resCourse)
-          }
+      if (!timers.get(selectedCurrency)) {
+        const interval = setInterval( () => {
+          axios.get(`${process.env.API_URL}/coins/${selectedCurrency}`).then( res => { 
+            const price = res.data.market_data.current_price.usd;
+            const users = timers.get(selectedCurrency).users.slice();
+            console.log(timers.get(selectedCurrency))
+            timers.get(selectedCurrency).users.forEach(user => {
+              if (user.lower ? price >= user.resCourse : price <= user.resCourse) {
+                console.log("resCource - 1");
+                bot.sendMessage(user.userId, "🔔🔔🔔", {replyMarkup});
+                users.splice(users.indexOf(user), 1);
+              } 
+            });
+
+            if (users.length) {
+              timers.get(selectedCurrency).users = users;
+            } else {
+              clearInterval(timers.get(selectedCurrency).timer);
+              timers.delete(selectedCurrency);
+            }
+          })
+        }, 5000 );
+
+        timers.set(selectedCurrency, {
+          timer: interval, 
+          users: [{
+            userId: userId,
+            lower: lower, 
+            resCourse: resCourse
+          }]
         })
-      }, 5000 )
+      } else {
+        timers.get(selectedCurrency).users.push({
+          userId: userId,
+          lower: lower, 
+          resCourse: resCourse
+        })
+      }
+      // interval = setInterval( () => {
+      //   axios.get(`${process.env.API_URL}/coins/${selectedCurrency}`).then( res => { 
+      //     const price = res.data.market_data.current_price.usd;
+
+      //     if (lower ? price >= resCourse : price <= resCourse) {
+      //       console.log(lower, "175")
+      //       bot.sendMessage(msg.from.id, "🔔🔔🔔", {replyMarkup});
+      //       clearInterval(interval);
+      //     } else {
+      //       console.log(lower, "179")
+      //       console.log("next", price, resCourse)
+      //     }
+      //   })
+      // }, 5000 )
     } //проверка промежутка? больше/меньше
   });
 
