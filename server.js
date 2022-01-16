@@ -32,6 +32,11 @@ const state = {
   monitorAction: false,
 }
 
+bot.on('start', (msg) => {
+  // obj -> map -> save
+  //add timers load from DB with actual check
+})
+
 bot.on(['/start', '/hello', '/return'], msg => {
   const replyMarkup = bot.keyboard([
     [
@@ -47,18 +52,22 @@ bot.on(['/start', '/hello', '/return'], msg => {
     ]
   ], {resize: true});
 
-  client.query(`SELECT * FROM test_table WHERE id = ${msg.from.id};`, (err, res) => {
-    if (err) console.log('user check error: ' + err);
-    if (res.rowCount === 0) client.query(
-      `INSERT INTO test_table(id, first_name, last_name, username, lang) VALUES($1, $2, $3, $4, $5) RETURNING *`,
-      [msg.from.id, msg.from.first_name, msg.from.last_name, msg.from.username, msg.from.language_code],
-      (err, res) => {
-      console.log(err ? "USER ADD ERROR" : `User ${res.rows[0].username || res.rows[0].first_name } was added (${res.rows[0].id}) `);
-    })
-    else console.log("user exist");
-  })
+  if (msg.text !== '⬅️') {
+    client.query(`SELECT * FROM test_table WHERE id = ${msg.from.id};`, (err, res) => {
+      if (err) console.log('user check error: ' + err);
+      if (res.rowCount === 0) client.query(
+        `INSERT INTO test_table(id, first_name, last_name, username, lang) VALUES($1, $2, $3, $4, $5) RETURNING *`,
+        [msg.from.id, msg.from.first_name, msg.from.last_name, msg.from.username, msg.from.language_code],
+        (err, res) => {
+        console.log(err ? "USER ADD ERROR" : `User ${res.rows[0].username || res.rows[0].first_name } was added (${res.rows[0].id}) `);
+      })
+      else console.log("user exist");
+    });
+
+    return bot.sendMessage(msg.from.id, 'Welcome!', {replyMarkup})
+  }
   
-  return bot.sendMessage(msg.from.id, msg.text !== '⬅️' ? 'Welcome!' : 'Main menu', {replyMarkup})
+  return bot.sendMessage(msg.from.id, 'Main menu', {replyMarkup})
 });
 
 bot.on(['/showcourse'], msg => {
@@ -161,6 +170,11 @@ bot.on('ask.targetPrice', msg => {
   ], {resize: true});
   let interval;
   
+  if (!/^\d+$/.test(resCourse)){
+    bot.sendMessage(userId, 'WTF?', {replyMarkup})
+    return
+  }
+
   axios.get(`${process.env.API_URL}/coins/${selectedCurrency}`).then( res => {
     const price = res.data.market_data.current_price.usd;
     const lower = price < resCourse;
@@ -228,6 +242,16 @@ bot.on('ask.targetPrice', msg => {
 
 
 })
+
+process.on('SIGINT', function () {
+  console.log('Ctrl-C...');
+  process.exit();
+});
+
+process.on('exit', () => {
+  // map -> obg -> save
+  //add timers save to data base
+});
 
 client.connect();
 bot.start();
