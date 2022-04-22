@@ -47,6 +47,10 @@
         "XRP": {
           "label": "XRP", 
           "command": "/getCourse"
+        },
+        "BSW": {
+          "label": "BSW",
+          "command": "/getCourse"
         }
     },
     "COINS": {
@@ -67,6 +71,9 @@
         }, 
         "XRP": {
             "id": "ripple"
+        },
+        "BSW": {
+          "id": "biswap"
         }
     }
 }

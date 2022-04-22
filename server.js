@@ -1,10 +1,8 @@
 const TeleBot = require('telebot');
 const { Client } = require('pg');
 const axios = require('axios');
-const fs = require("fs");
 const webUtils = require("./utils/web");
 const CONST = require("./utils/constants.json");
-const { type } = require('os');
 const client = new Client({
   connectionString: process.env.DATABASE_URL,
   ssl: {
@@ -79,7 +77,7 @@ bot.on(['/showcourse'], msg => {
     ],
     [
       BUTTONS.SOL.label,
-      BUTTONS.ADA.label,
+      BUTTONS.BSW.label,
       BUTTONS.XRP.label,
     ],
     [
@@ -132,7 +130,7 @@ bot.on(['/notificate'], msg => {
     ],
     [
       BUTTONS.SOL.label,
-      BUTTONS.ADA.label,
+      BUTTONS.BSW.label,
       BUTTONS.XRP.label,
     ],
     [
